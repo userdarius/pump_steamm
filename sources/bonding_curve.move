@@ -11,9 +11,7 @@ use sui::url::Url;
 use std::option;
 
 // Constants
-const MAX_SUPPLY: u64 = 1_000_000_000; // 1B total supply
-const BONDING_SUPPLY: u64 = 800_000_000; // 800M available through bonding curve
-const TRANSITION_THRESHOLD: u64 = 69_000; // $69k market cap threshold
+const MAX_SUPPLY: u64 = 800_000_000; // 1B total supply
 
 // Errors
 const EInsufficientLiquidity: u64 = 0;
@@ -25,12 +23,10 @@ public struct BondingCurve<phantom T> has key {
     id: UID,
     treasury_cap: TreasuryCap<T>,
     metadata: CoinMetadata<T>,
-    a: u64,         // Price constant
-    b: u64,         // Slope constant
     total_minted: u64,
     sui_reserves: Balance<SUI>,
     creator: address,
-    transitioned: bool
+    transitioned: bool 
 }
 
 /// Initialize new bonding curve token
@@ -43,7 +39,7 @@ public fun create_token<T: drop>(
     a: u64,
     b: u64,
     ctx: &mut TxContext
-) {
+): BondingCurve<T> {
 
     let (treasury_cap, metadata) = coin::create_currency<T>(
         creator,
@@ -59,15 +55,12 @@ public fun create_token<T: drop>(
         id: object::new(ctx),
         treasury_cap,
         metadata,
-        a,
-        b,
         total_minted: 0,
         sui_reserves: balance::zero(),
         creator: tx_context::sender(ctx),
         transitioned: false
     };
 
-    transfer::transfer(bonding_curve, tx_context::sender(ctx));
 }
 
 /// Buy tokens through bonding curve
@@ -109,7 +102,7 @@ fun calculate_price<T>(bonding_curve: &BondingCurve<T>): u64 {
 }
 
 fun check_transition<T>(bonding_curve: &mut BondingCurve<T>) {
-    if (bonding_curve.total_minted >= BONDING_SUPPLY) {
+    if (bonding_curve.total_minted >= MAX_SUPPLY) {
         bonding_curve.transitioned = true;
         // TODO: Initialize AMM pool with remaining liquidity
     }
@@ -121,7 +114,7 @@ fun mint_tokens<T>(
     ctx: &mut TxContext
 ) {
     let new_total = bonding_curve.total_minted + amount;
-    assert!(new_total <= BONDING_SUPPLY, EInvalidAmount);
+    assert!(new_total <= MAX_SUPPLY, EInvalidAmount);
     
     let tokens = coin::mint(&mut bonding_curve.treasury_cap, amount, ctx);
     transfer::public_transfer(tokens, tx_context::sender(ctx));
