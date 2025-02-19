@@ -74,7 +74,7 @@ public fun create_token<T: drop>(
         version: version::new(CURRENT_VERSION),
     };
 
-    let event = NewBondingCurveResult { bonding_curve_id: object::id(&bonding_curve), coin_type: T::type_name() };
+    let event = NewBondingCurveResult { bonding_curve_id: object::id(&bonding_curve), coin_type: T::type_name() }; // FIX THIS
 
     emit_event(event);
 
@@ -93,7 +93,7 @@ public entry fun buy<T>(
     
     let amount = coin::value(&payment);
     let current_price = calculate_price(bonding_curve);
-    let tokens_to_mint = amount * 1_000_000_000 / current_price; // Adjust for decimals
+    let tokens_to_mint = amount * 800_000_000 / current_price; // Adjust for decimals
     
     mint_tokens(bonding_curve, tokens_to_mint, ctx);
     update_reserves(bonding_curve, payment);
@@ -117,8 +117,11 @@ public entry fun sell<T>(
     send_sui(bonding_curve, sui_amount, ctx);
 }
 
+// Placeholder modify with bonding curve params 
 fun calculate_price<T>(bonding_curve: &BondingCurve<T>): u64 {
-    bonding_curve.a + (bonding_curve.b * bonding_curve.total_minted / 1_000_000)
+    let total_supply = bonding_curve.total_minted;
+    let price = 1_000_000_000 * total_supply / 800_000_000; // Adjust for decimals
+    price
 }
 
 fun check_transition<T>(bonding_curve: &mut BondingCurve<T>) {
@@ -155,10 +158,7 @@ fun update_reserves<T>(
     payment: Coin<SUI>
 ) {
     let amount = coin::value(&payment);
-    bonding_curve.sui_reserves = balance::join(
-        bonding_curve.sui_reserves, 
-        coin::into_balance(payment)
-    );
+    bonding_curve.sui_reserves = balance::add(&mut bonding_curve.sui_reserves, amount); // FIX THIS 
 }
 
 fun send_sui<T>(
