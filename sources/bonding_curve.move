@@ -3,20 +3,32 @@ module pump_steamm::bonding_curve;
 use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
 use sui::balance::{Self, Balance};
 use sui::transfer;
+use std::type_name::TypeName;
 use sui::tx_context::{Self, TxContext};
 use sui::object::{Self, UID};
 use sui::sui::SUI;
 use std::string::{String, utf8};
 use sui::url::Url;
 use std::option;
+use pump_steamm::version::{Self, Version};
+use pump_steamm::events::{Self, emit_event};
+use pump_steamm::registry::Registry;
+
 
 // Constants
 const MAX_SUPPLY: u64 = 800_000_000; // 1B total supply
+const CURRENT_VERSION: u16 = 1;
 
 // Errors
 const EInsufficientLiquidity: u64 = 0;
 const ETransitionedToAMM: u64 = 1;
 const EInvalidAmount: u64 = 2;
+
+// Events
+public struct NewBondingCurveResult has copy, drop, store {
+    bonding_curve_id: ID,
+    coin_type: TypeName,
+}
 
 /// Bonding curve configuration and state
 public struct BondingCurve<phantom T> has key {
@@ -26,18 +38,18 @@ public struct BondingCurve<phantom T> has key {
     total_minted: u64,
     sui_reserves: Balance<SUI>,
     creator: address,
-    transitioned: bool 
+    transitioned: bool,
+    version: Version
 }
 
 /// Initialize new bonding curve token
 public fun create_token<T: drop>(
+    registry: &mut Registry,
     creator: T,
     name: vector<u8>,
     symbol: vector<u8>,
     description: vector<u8>,
     image_url: Option<Url>,
-    a: u64,
-    b: u64,
     ctx: &mut TxContext
 ): BondingCurve<T> {
 
@@ -53,14 +65,22 @@ public fun create_token<T: drop>(
 
     let bonding_curve = BondingCurve {
         id: object::new(ctx),
-        treasury_cap,
-        metadata,
+        treasury_cap: treasury_cap,
+        metadata: metadata,
         total_minted: 0,
         sui_reserves: balance::zero(),
         creator: tx_context::sender(ctx),
-        transitioned: false
+        transitioned: false,
+        version: version::new(CURRENT_VERSION),
     };
 
+    let event = NewBondingCurveResult { bonding_curve_id: object::id(&bonding_curve), coin_type: T::type_name() };
+
+    emit_event(event);
+
+    registry.register_bonding_curve( event.bonding_curve_id, event.coin_type);
+
+    bonding_curve
 }
 
 /// Buy tokens through bonding curve

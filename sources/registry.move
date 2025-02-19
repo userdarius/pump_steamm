@@ -15,7 +15,7 @@ use sui::tx_context::{Self, TxContext};
 
 const CURRENT_VERSION: u16 = 1;
 
-public struct BondingCurveKey has copy, store, drop { coin_type: TypeName }
+public struct BondingCurveKey has copy, store, drop { bonding_curve_id: ID, coin_type: TypeName }
 
 // ===== Errors =====
 
@@ -42,17 +42,17 @@ fun init(ctx: &mut TxContext) {
     transfer::share_object(registry);
 }
 
-public(package) fun register_bonding_curve<T>(
+public(package) fun register_bonding_curve(
         registry: &mut Registry,
-        bonding_curve: &bonding_curve::BondingCurve<T>,
+        bonding_curve_id: ID,
         coin_type: TypeName
     ) {
         registry.version.assert_version_and_upgrade(CURRENT_VERSION);
-        let key = BondingCurveKey { coin_type};
+        let key = BondingCurveKey { bonding_curve_id, coin_type};
 
         assert!(!registry.bondingCurves.contains(key), EDuplicatedBondingCurveType);
 
-        let data = BondingCurveData { bondingCurve_id: object::id(bonding_curve) };
+        let data = BondingCurveData { bondingCurve_id: bonding_curve_id };
         registry.bondingCurves.add(key, data);
     }
 
