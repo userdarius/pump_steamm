@@ -13,6 +13,7 @@ use std::option;
 use pump_steamm::version::{Self, Version};
 use pump_steamm::events::{Self, emit_event};
 use pump_steamm::registry::Registry;
+use sui::math;
 
 
 // Constants
@@ -23,6 +24,8 @@ const CURRENT_VERSION: u16 = 1;
 const EInsufficientLiquidity: u64 = 0;
 const ETransitionedToAMM: u64 = 1;
 const EInvalidAmount: u64 = 2;
+const a = 1_000_000_000;
+const b = 30;
 
 // Events
 public struct NewBondingCurveResult has copy, drop, store {
@@ -117,10 +120,10 @@ public entry fun sell<T>(
     send_sui(bonding_curve, sui_amount, ctx);
 }
 
-// Placeholder modify with bonding curve params 
+// Placeholder modify with bonding curve params (y = -ax/(-b-x))
 fun calculate_price<T>(bonding_curve: &BondingCurve<T>): u64 {
     let total_supply = bonding_curve.total_minted;
-    let price = 1_000_000_000 * total_supply / 800_000_000; // Adjust for decimals
+    let price = ((math::neg(a) * total_supply) / math::neg(b + total_supply)); // Adjust for decimals and use signed ints
     price
 }
 
