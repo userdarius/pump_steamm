@@ -130,19 +130,6 @@ public entry fun sell<T>(
     bonding_curve.virtual_token_reserves += amount;
 }
 
-// Placeholder modify with bonding curve params (y = -ax/(-b-x)) 
-fun calculate_price<T>(bonding_curve: &BondingCurve<T>): u64 {
-    let total_supply = bonding_curve.total_minted;
-    let price = ((math::neg(a) * total_supply) / math::neg(b + total_supply)); // Adjust for decimals and use signed ints
-    price
-}
-
-// supply curve
-fun tokens_to_receive<T>(x) {
-    let y = 1073000191 - 32190005730 / (30 + x); // deriving this gives us the price of each token
-    y // number of tokens obtained based on the amount of SUI purchased
-}
-
 fun calculate_tokens_to_mint<T>(bonding_curve: &BondingCurve<T>, sui_amount: u64): u64 {
     let x = (bonding_curve.virtual_sui_reserves as u128) + (sui_amount as u128);
     let y = INITIAL_VIRTUAL_TOKENS as u128 - (K / (INITIAL_VIRTUAL_SUI as u128 + x));
