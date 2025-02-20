@@ -156,7 +156,7 @@ fun calculate_sui_to_receive<T>(bonding_curve: &BondingCurve<T>, token_amount: u
 }
 
 fun check_transition<T>(bonding_curve: &mut BondingCurve<T>) {
-    if (bonding_curve.total_minted >= MAX_SUPPLY) {
+    if (bonding_curve.sui_reserves >= LISTING_THRESHOLD) {
         bonding_curve.transitioned = true;
         // TODO: Initialize AMM pool with remaining liquidity
     }
