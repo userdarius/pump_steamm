@@ -17,8 +17,12 @@ use sui::math;
 
 
 // Constants
-const MAX_SUPPLY: u64 = 1_000_000_000; 
 const CURRENT_VERSION: u16 = 1;
+const TOTAL_SUPPLY: u64 = 1_000_000_000_000_000; // 1 billion tokens with 6 decimals
+const INITIAL_VIRTUAL_SUI: u64 = 30_000_000; // 30 SUI with 6 decimals
+const INITIAL_VIRTUAL_TOKENS: u64 = 1_073_000_191_000_000; // 1,073,000,191 tokens with 6 decimals
+const K: u128 = 32_190_005_730_000_000_000_000; // Constant product k
+const LISTING_THRESHOLD: u64 = 69_000_000_000; // $69,000 in SUI 
 
 // Errors
 const EInsufficientLiquidity: u64 = 0;
@@ -39,7 +43,9 @@ public struct BondingCurve<phantom T> has key {
     treasury_cap: TreasuryCap<T>,
     metadata: CoinMetadata<T>,
     total_minted: u64,
-    sui_reserves: Balance<SUI>,
+    virtual_sui_reserves: u64,
+    virtual_token_reserves: u64,   
+    sui_reserves: Balance<SUI>, 
     creator: address,
     transitioned: bool,
     version: Version
@@ -95,11 +101,13 @@ public entry fun buy<T>(
     assert!(!bonding_curve.transitioned, ETransitionedToAMM);
     
     let amount = coin::value(&payment);
-    let current_price = calculate_price(bonding_curve);
-    let tokens_to_mint = amount * 800_000_000 / current_price; // Adjust for decimals
+    let tokens_to_mint = calculate_tokens_to_mint(bonding_curve, amount);
     
     mint_tokens(bonding_curve, tokens_to_mint, ctx);
     update_reserves(bonding_curve, payment);
+    
+    bonding_curve.virtual_sol_reserves += amount;
+    bonding_curve.virtual_token_reserves -= tokens_to_mint;
     
     check_transition(bonding_curve);
 }
@@ -113,11 +121,13 @@ public entry fun sell<T>(
     assert!(!bonding_curve.transitioned, ETransitionedToAMM);
     
     let amount = coin::value(&tokens);
-    let current_price = calculate_price(bonding_curve);
-    let sui_amount = amount * current_price / 1_000_000_000;
+    let sui_amount = calculate_sui_to_receive(bonding_curve, amount);
     
     burn_tokens(bonding_curve, tokens);
     send_sui(bonding_curve, sui_amount, ctx);
+    
+    bonding_curve.virtual_sol_reserves -= sui_amount;
+    bonding_curve.virtual_token_reserves += amount;
 }
 
 // Placeholder modify with bonding curve params (y = -ax/(-b-x)) 
@@ -131,6 +141,18 @@ fun calculate_price<T>(bonding_curve: &BondingCurve<T>): u64 {
 fun tokens_to_receive<T>(x) {
     let y = 1073000191 - 32190005730 / (30 + x); // deriving this gives us the price of each token
     y // number of tokens obtained based on the amount of SUI purchased
+}
+
+fun calculate_tokens_to_mint<T>(bonding_curve: &BondingCurve<T>, sui_amount: u64): u64 {
+    let x = (bonding_curve.virtual_sui_reserves as u128) + (sui_amount as u128);
+    let y = INITIAL_VIRTUAL_TOKENS as u128 - (K / (INITIAL_VIRTUAL_SUI as u128 + x));
+    (y as u64) - bonding_curve.virtual_token_reserves
+}
+
+fun calculate_sui_to_receive<T>(bonding_curve: &BondingCurve<T>, token_amount: u64): u64 {
+    let y = (bonding_curve.virtual_token_reserves as u128) + (token_amount as u128);
+    let x = (K / (INITIAL_VIRTUAL_TOKENS as u128 - y)) - (INITIAL_VIRTUAL_SUI as u128);
+    bonding_curve.virtual_sui_reserves - (x as u64)
 }
 
 fun check_transition<T>(bonding_curve: &mut BondingCurve<T>) {
