@@ -106,7 +106,7 @@ public entry fun buy<T>(
     mint_tokens(bonding_curve, tokens_to_mint, ctx);
     update_reserves(bonding_curve, payment);
     
-    bonding_curve.virtual_sol_reserves += amount;
+    bonding_curve.virtual_sui_reserves += amount;
     bonding_curve.virtual_token_reserves -= tokens_to_mint;
     
     check_transition(bonding_curve);
@@ -126,7 +126,7 @@ public entry fun sell<T>(
     burn_tokens(bonding_curve, tokens);
     send_sui(bonding_curve, sui_amount, ctx);
     
-    bonding_curve.virtual_sol_reserves -= sui_amount;
+    bonding_curve.virtual_sui_reserves -= sui_amount;
     bonding_curve.virtual_token_reserves += amount;
 }
 
