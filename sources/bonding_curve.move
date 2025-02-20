@@ -17,7 +17,7 @@ use sui::math;
 
 
 // Constants
-const MAX_SUPPLY: u64 = 800_000_000; // 1B total supply
+const MAX_SUPPLY: u64 = 1_000_000_000; 
 const CURRENT_VERSION: u16 = 1;
 
 // Errors
@@ -120,11 +120,17 @@ public entry fun sell<T>(
     send_sui(bonding_curve, sui_amount, ctx);
 }
 
-// Placeholder modify with bonding curve params (y = -ax/(-b-x))
+// Placeholder modify with bonding curve params (y = -ax/(-b-x)) 
 fun calculate_price<T>(bonding_curve: &BondingCurve<T>): u64 {
     let total_supply = bonding_curve.total_minted;
     let price = ((math::neg(a) * total_supply) / math::neg(b + total_supply)); // Adjust for decimals and use signed ints
     price
+}
+
+// supply curve
+fun tokens_to_receive<T>(x) {
+    let y = 1073000191 - 32190005730 / (30 + x); // deriving this gives us the price of each token
+    y // number of tokens obtained based on the amount of SUI purchased
 }
 
 fun check_transition<T>(bonding_curve: &mut BondingCurve<T>) {
