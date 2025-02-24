@@ -1,4 +1,4 @@
-module steamm::math;
+module pump_steamm::math;
 
 use std::option::{none, some};
 use std::u64::min;

@@ -18,7 +18,7 @@ use sui::math;
 
 // Constants
 const CURRENT_VERSION: u16 = 1;
-const TOTAL_SUPPLY: u64 = 1_000_000_000_000_000; // 1 billion tokens with 6 decimals
+const MAX_SUPPLY: u64 = 1_000_000_000_000_000; // 1 billion tokens with 6 decimals
 const INITIAL_VIRTUAL_SUI: u64 = 30_000_000; // 30 SUI with 6 decimals
 const INITIAL_VIRTUAL_TOKENS: u64 = 1_073_000_191_000_000; // 1,073,000,191 tokens with 6 decimals
 const K: u128 = 32_190_005_730_000_000_000_000; // Constant product k
@@ -28,8 +28,8 @@ const LISTING_THRESHOLD: u64 = 69_000_000_000; // $69,000 in SUI
 const EInsufficientLiquidity: u64 = 0;
 const ETransitionedToAMM: u64 = 1;
 const EInvalidAmount: u64 = 2;
-const a = 1_000_000_000;
-const b = 30;
+const A: u64 = 1_000_000_000;
+const B: u64 = 30;
 
 // Events
 public struct NewBondingCurveResult has copy, drop, store {
@@ -77,6 +77,8 @@ public fun create_token<T: drop>(
         treasury_cap: treasury_cap,
         metadata: metadata,
         total_minted: 0,
+        virtual_sui_reserves: INITIAL_VIRTUAL_SUI,
+        virtual_token_reserves: INITIAL_VIRTUAL_TOKENS,
         sui_reserves: balance::zero(),
         creator: tx_context::sender(ctx),
         transitioned: false,
@@ -143,7 +145,7 @@ fun calculate_sui_to_receive<T>(bonding_curve: &BondingCurve<T>, token_amount: u
 }
 
 fun check_transition<T>(bonding_curve: &mut BondingCurve<T>) {
-    if (bonding_curve.sui_reserves >= LISTING_THRESHOLD) {
+    if (bonding_curve.virtual_sui_reserves >= LISTING_THRESHOLD) {
         bonding_curve.transitioned = true;
         // TODO: Initialize AMM pool with remaining liquidity
     }
