@@ -108,8 +108,8 @@ public entry fun buy<T>(
     mint_tokens(bonding_curve, tokens_to_mint, ctx);
     update_reserves(bonding_curve, payment);
     
-    bonding_curve.virtual_sui_reserves += amount;
-    bonding_curve.virtual_token_reserves -= tokens_to_mint;
+    bonding_curve.virtual_sui_reserves = bonding_curve.virtual_sui_reserves + amount;
+    bonding_curve.virtual_token_reserves = bonding_curve.virtual_token_reserves - tokens_to_mint;
     
     check_transition(bonding_curve);
 }
@@ -128,8 +128,8 @@ public entry fun sell<T>(
     burn_tokens(bonding_curve, tokens);
     send_sui(bonding_curve, sui_amount, ctx);
     
-    bonding_curve.virtual_sui_reserves -= sui_amount;
-    bonding_curve.virtual_token_reserves += amount;
+    bonding_curve.virtual_sui_reserves = bonding_curve.virtual_sui_reserves - sui_amount;
+    bonding_curve.virtual_token_reserves = bonding_curve.virtual_token_reserves + amount;
 }
 
 fun calculate_tokens_to_mint<T>(bonding_curve: &BondingCurve<T>, sui_amount: u64): u64 {
@@ -205,6 +205,10 @@ fun send_sui<T>(
 
 #[test]
 fun test_bonding_curve_buy_sell() {
+    use pump_steamm::registry;
+    use pump_steamm::global_admin;
+    use pump_steamm::bonding_curve;
+
     let ctx = tx_context::dummy();
     
     // Create registry
