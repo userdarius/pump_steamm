@@ -52,7 +52,7 @@ public struct BondingCurve<phantom T> has key {
 }
 
 /// Initialize new bonding curve token
-public fun create_token<T: drop>(
+public fun create_token<T: drop + store>(
     registry: &mut Registry,
     creator: T,
     name: vector<u8>,
@@ -145,9 +145,18 @@ fun calculate_sui_to_receive<T>(bonding_curve: &BondingCurve<T>, token_amount: u
 }
 
 fun check_transition<T>(bonding_curve: &mut BondingCurve<T>) {
-    if (bonding_curve.virtual_sui_reserves >= LISTING_THRESHOLD) {
+    if (bonding_curve.virtual_sui_reserves >= LISTING_THRESHOLD && !bonding_curve.transitioned) {
         bonding_curve.transitioned = true;
-        // TODO: Initialize AMM pool with remaining liquidity
+        
+        // Create liquidity pool with remaining virtual reserves
+        // This is a simplified example - implement according to your AMM logic
+        let token_amount = bonding_curve.virtual_token_reserves / 2;
+        let sui_amount = bonding_curve.virtual_sui_reserves / 2;
+        
+        if (balance::value(&bonding_curve.sui_reserves) >= sui_amount) {
+            // Initialize AMM pool logic here
+            // ...
+        }
     }
 }
 
@@ -177,8 +186,8 @@ fun update_reserves<T>(
     bonding_curve: &mut BondingCurve<T>,
     payment: Coin<SUI>
 ) {
-    let amount = coin::value(&payment);
-    bonding_curve.sui_reserves = balance::add(&mut bonding_curve.sui_reserves, amount); // FIX THIS 
+    let payment_balance = coin::into_balance(payment);
+    balance::join(&mut bonding_curve.sui_reserves, payment_balance); 
 }
 
 fun send_sui<T>(
@@ -191,4 +200,37 @@ fun send_sui<T>(
     
     let sui = coin::take(balance, amount, ctx);
     transfer::public_transfer(sui, tx_context::sender(ctx));
+}
+
+
+#[test]
+fun test_bonding_curve_buy_sell() {
+    let ctx = tx_context::dummy();
+    
+    // Create registry
+    let registry = registry::init_for_testing(&mut ctx);
+    
+    // Create an admin
+    let admin = global_admin::init_for_testing(&mut ctx);
+    
+    // Create a new token with bonding curve
+    let bonding_curve = bonding_curve::create_token(
+        &mut registry,
+        admin,
+        b"Test Token",
+        b"TEST",
+        b"A test token",
+        option::none(),
+        &mut ctx
+    );
+    
+    // Test buying tokens
+    let payment = coin::mint_for_testing<SUI>(1000000, &mut ctx);
+    bonding_curve::buy(&mut bonding_curve, payment, &mut ctx);
+    
+    // Assert the reserves have increased
+    assert!(bonding_curve.virtual_sui_reserves > INITIAL_VIRTUAL_SUI, 0);
+    
+    // Clean up
+    // (Add proper cleanup code here)
 }
