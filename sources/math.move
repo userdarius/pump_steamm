@@ -2,7 +2,7 @@ module pump_steamm::math;
 
 use std::option::{none, some};
 use std::u64::min;
-use suilend::decimal::Decimal;
+use pump_steamm::decimal::Decimal;
 
 const MAX_U64: u128 = 18_446_744_073_709_551_615u128;
 

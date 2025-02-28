@@ -69,6 +69,7 @@ public fun create_token<T: drop + store>(
         name,
         symbol,
         description,
+
         image_url, 
         ctx,
     );
@@ -201,39 +202,3 @@ fun send_sui<T>(
     let sui = coin::take(balance, amount, ctx);
     transfer::public_transfer(sui, tx_context::sender(ctx));
 }
-
-
-// #[test]
-// fun test_bonding_curve_buy_sell() {
-//     use pump_steamm::registry;
-//     use pump_steamm::global_admin;
-//     use pump_steamm::bonding_curve;
-
-//     let mut ctx = tx_context::dummy();
-    
-//     // Create registry
-//     let mut registry = registry::init_for_testing(&mut ctx);
-    
-//     // Create an admin
-//     let admin = global_admin::init_for_testing(&mut ctx);
-    
-//     // Create a new token with bonding curve
-//     let mut bonding_curve = bonding_curve::create_token(
-//         &mut registry,
-//         admin,
-//         b"Test Token",
-//         b"TEST",
-//         b"A test token",
-//         option::none(),
-//         &mut ctx
-//     );
-    
-//     // Test buying tokens
-//     let payment = coin::mint_for_testing<SUI>(1000000, &mut ctx);
-//     bonding_curve::buy(&mut bonding_curve, payment, &mut ctx);
-    
-//     // Assert the reserves have increased
-//     assert!(bonding_curve.virtual_sui_reserves > INITIAL_VIRTUAL_SUI, 0);
-    
-//     // Clean up
-// }
