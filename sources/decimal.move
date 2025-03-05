@@ -80,9 +80,9 @@ public fun mul(arg0: Decimal, arg1: Decimal) : Decimal {
     Decimal{value: arg0.value * arg1.value / 1000000000000000000}
 }
 
-public fun pow(arg0: Decimal, arg1: u64) : Decimal {
-    let v0 = arg0;
-    let v1 = from(1);
+public fun pow(arg0: Decimal, mut arg1: u64) : Decimal {
+    let mut v0 = arg0;
+    let mut v1 = from(1);
     while (arg1 > 0) {
         if (arg1 % 2 == 1) {
             v1 = mul(v1, v0);

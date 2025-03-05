@@ -21,7 +21,7 @@ public struct BondingCurveKey has copy, store, drop { bonding_curve_id: ID, coin
 
 const EDuplicatedBondingCurveType: u64 = 1;
 
-public struct Registry has key {
+public struct Registry has key, store {
     id: UID,
     version: Version,
     bondingCurves: Bag

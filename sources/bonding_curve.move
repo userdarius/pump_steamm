@@ -39,7 +39,7 @@ public struct NewBondingCurveResult has copy, drop, store {
 }
 
 /// Bonding curve configuration and state
-public struct BondingCurve<phantom T> has key {
+public struct BondingCurve<phantom T> has key, store {
     id: UID,
     treasury_cap: TreasuryCap<T>,
     metadata: CoinMetadata<T>,
@@ -201,4 +201,113 @@ fun send_sui<T>(
     
     let sui = coin::take(balance, amount, ctx);
     transfer::public_transfer(sui, tx_context::sender(ctx));
+}
+
+/// Accessors for testing
+#[test_only]
+public fun get_total_minted<T>(bonding_curve: &BondingCurve<T>): u64 {
+    bonding_curve.total_minted
+}
+
+#[test_only]
+public fun get_virtual_sui_reserves<T>(bonding_curve: &BondingCurve<T>): u64 {
+    bonding_curve.virtual_sui_reserves
+}
+
+#[test_only]
+public fun get_virtual_token_reserves<T>(bonding_curve: &BondingCurve<T>): u64 {
+    bonding_curve.virtual_token_reserves
+}
+
+#[test_only]
+public fun is_transitioned<T>(bonding_curve: &BondingCurve<T>): bool {
+    bonding_curve.transitioned
+}
+
+/// Create a bonding curve for testing purposes
+#[test_only]
+public fun create_for_testing<T: drop + store>(
+    registry: &mut Registry,
+    treasury_cap: TreasuryCap<T>,
+    metadata: CoinMetadata<T>,
+    ctx: &mut TxContext
+): BondingCurve<T> {
+    let bonding_curve = BondingCurve {
+        id: object::new(ctx),
+        treasury_cap,
+        metadata,
+        total_minted: 0,
+        virtual_sui_reserves: INITIAL_VIRTUAL_SUI,
+        virtual_token_reserves: INITIAL_VIRTUAL_TOKENS,
+        sui_reserves: balance::zero(),
+        creator: tx_context::sender(ctx),
+        transitioned: false,
+        version: version::new(CURRENT_VERSION),
+    };
+
+    let bonding_curve_id = object::id(&bonding_curve);
+    let coin_type = type_name::get<T>();
+    
+    registry.register_bonding_curve(bonding_curve_id, coin_type);
+
+    bonding_curve
+}
+
+/// Create a simplified version of BondingCurve for testing
+#[test_only]
+public struct MockBondingCurve has key, store {
+    id: UID,
+    total_minted: u64,
+    virtual_sui_reserves: u64,
+    virtual_token_reserves: u64,   
+    sui_reserves: Balance<SUI>, 
+    creator: address,
+    transitioned: bool,
+    version: Version
+}
+
+/// Create a mock bonding curve for testing purposes without requiring a treasury cap or metadata
+#[test_only]
+public fun create_for_testing_mock(
+    registry: &mut Registry,
+    ctx: &mut TxContext
+): MockBondingCurve {
+    let mock_bonding_curve = MockBondingCurve {
+        id: object::new(ctx),
+        total_minted: 0,
+        virtual_sui_reserves: INITIAL_VIRTUAL_SUI,
+        virtual_token_reserves: INITIAL_VIRTUAL_TOKENS,
+        sui_reserves: balance::zero(),
+        creator: tx_context::sender(ctx),
+        transitioned: false,
+        version: version::new(CURRENT_VERSION),
+    };
+
+    let bonding_curve_id = object::id(&mock_bonding_curve);
+    // Use a dummy type name since it's just for testing
+    let coin_type = type_name::get<SUI>();
+    
+    registry.register_bonding_curve(bonding_curve_id, coin_type);
+
+    mock_bonding_curve
+}
+
+#[test_only]
+public fun get_virtual_sui_reserves_mock(bonding_curve: &MockBondingCurve): u64 {
+    bonding_curve.virtual_sui_reserves
+}
+
+#[test_only]
+public fun get_virtual_token_reserves_mock(bonding_curve: &MockBondingCurve): u64 {
+    bonding_curve.virtual_token_reserves
+}
+
+#[test_only]
+public fun get_total_minted_mock(bonding_curve: &MockBondingCurve): u64 {
+    bonding_curve.total_minted
+}
+
+#[test_only]
+public fun is_transitioned_mock(bonding_curve: &MockBondingCurve): bool {
+    bonding_curve.transitioned
 }
