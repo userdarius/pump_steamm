@@ -26,7 +26,7 @@ module pump_steamm::test_token {
         transfer::public_transfer(metadata, tx_context::sender(ctx));
     }
 
-    /// This function is used in tests to get a treasury cap
+
     #[test_only]
     public fun get_test_treasury_cap(scenario: &mut sui::test_scenario::Scenario): (TreasuryCap<TEST_TOKEN>, CoinMetadata<TEST_TOKEN>) {
         use sui::test_scenario;

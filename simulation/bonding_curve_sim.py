@@ -13,7 +13,6 @@ INITIAL_VIRTUAL_TOKENS = Decimal("1073000191")  # ~1.07B tokens
 K = Decimal("32190005730")  # Constant product k
 LISTING_THRESHOLD = Decimal("69")  # 69 SUI for transition to AMM
 
-# Debug flag
 DEBUG = True
 
 
@@ -42,7 +41,7 @@ class BondingCurve:
                 f"  Before: Virtual SUI={self.virtual_sui_reserves}, Virtual Tokens={self.virtual_token_reserves}"
             )
 
-        # From the Move code:
+        # From Move code:
         # let x = (bonding_curve.virtual_sui_reserves as u128) + (sui_amount as u128);
         # let y = INITIAL_VIRTUAL_TOKENS as u128 - (K / (INITIAL_VIRTUAL_SUI as u128 + x));
         # (y as u64) - bonding_curve.virtual_token_reserves
@@ -53,7 +52,6 @@ class BondingCurve:
         if x <= Decimal("0"):
             return Decimal("0")
 
-        # This is the key formula from the Move code
         y = INITIAL_VIRTUAL_TOKENS - (K / (INITIAL_VIRTUAL_SUI + x))
 
         # Tokens to mint is the difference between new token supply and current virtual reserves
