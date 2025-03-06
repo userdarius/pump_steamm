@@ -14,23 +14,25 @@ use std::option;
 use pump_steamm::version::{Self, Version};
 use pump_steamm::events::{Self, emit_event};
 use pump_steamm::registry::Registry;
+use pump_steamm::global_admin::GlobalAdmin;
 use sui::math;
 
 
 // Constants
 const CURRENT_VERSION: u16 = 1;
-const MAX_SUPPLY: u64 = 1_000_000_000_000_000; // 1 billion tokens with 6 decimals
-const INITIAL_VIRTUAL_SUI: u64 = 30_000_000; // 30 SUI with 6 decimals
-const INITIAL_VIRTUAL_TOKENS: u64 = 1_073_000_191_000_000; // 1,073,000,191 tokens with 6 decimals
-const K: u128 = 32_190_005_730_000_000_000_000; // Constant product k
-const LISTING_THRESHOLD: u64 = 69_000_000_000; // $69,000 in SUI 
+const MAX_SUPPLY: u64 = 1_000_000_000_000_000_000; // 1 billion tokens with 9 decimals
+const INITIAL_VIRTUAL_SUI: u64 = 30_000_000_000; // 30 SUI with 9 decimals
+const INITIAL_VIRTUAL_TOKENS: u64 = 1_073_000_191_000_000_000; // 1,073,000,191 tokens with 9 decimals
+const K: u128 = 32_190_005_730_000_000_000_000_000; // Constant product k (recalculated for 9 decimals)
+const LISTING_THRESHOLD: u64 = 69_000_000_000; // $69,000 in SUI with 9 decimals
 
 // Errors
 const EInsufficientLiquidity: u64 = 0;
 const ETransitionedToAMM: u64 = 1;
-const EInvalidAmount: u64 = 2;
+const EInvalidAmount: u64 = 2;  
 const A: u64 = 1_000_000_000;
 const B: u64 = 30;
+const ENotAuthorized: u64 = 3;
 
 // Events
 public struct NewBondingCurveResult has copy, drop, store {
@@ -310,4 +312,61 @@ public fun get_total_minted_mock(bonding_curve: &MockBondingCurve): u64 {
 #[test_only]
 public fun is_transitioned_mock(bonding_curve: &MockBondingCurve): bool {
     bonding_curve.transitioned
+}
+
+/// Admin-only function to withdraw collected fees
+public entry fun withdraw_fees<T>(
+    bonding_curve: &mut BondingCurve<T>,
+    admin: &GlobalAdmin,
+    amount: u64,
+    recipient: address,
+    ctx: &mut TxContext
+) {
+    // Only the admin can call this function
+    assert!(tx_context::sender(ctx) == object::id_address(admin), ENotAuthorized);
+    
+    // Calculate fee - can add a proper fee mechanism here
+    let fee_amount = amount;
+    assert!(balance::value(&bonding_curve.sui_reserves) >= fee_amount, EInsufficientLiquidity);
+    
+    // Send fee to recipient
+    let sui = coin::take(&mut bonding_curve.sui_reserves, fee_amount, ctx);
+    transfer::public_transfer(sui, recipient);
+}
+
+/// Admin-only function to perform maintenance operations
+public entry fun perform_maintenance<T>(
+    bonding_curve: &mut BondingCurve<T>,
+    admin: &GlobalAdmin,
+    ctx: &mut TxContext
+) {
+    // Only the admin can call this function
+    assert!(tx_context::sender(ctx) == object::id_address(admin), ENotAuthorized);
+    
+    // Implement maintenance operations here
+    // For example:
+    // - Update curve parameters
+    // - Adjust virtual reserves
+    // - Update versions
+}
+
+/// Admin-only function to update curve parameters
+public entry fun update_parameters<T>(
+    bonding_curve: &mut BondingCurve<T>,
+    admin: &GlobalAdmin,
+    new_virtual_sui: Option<u64>,
+    new_virtual_tokens: Option<u64>,
+    ctx: &mut TxContext
+) {
+    // Only the admin can call this function
+    assert!(tx_context::sender(ctx) == object::id_address(admin), ENotAuthorized);
+    
+    // Update virtual reserves if provided
+    if (option::is_some(&new_virtual_sui)) {
+        bonding_curve.virtual_sui_reserves = option::destroy_some(new_virtual_sui);
+    };
+    
+    if (option::is_some(&new_virtual_tokens)) {
+        bonding_curve.virtual_token_reserves = option::destroy_some(new_virtual_tokens);
+    };
 }
